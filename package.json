@@ -1,0 +1,35 @@
+{
+  "name": "mock-request-queue",
+  "version": "0.1.0",
+  "description": "A super-simple mock for the node request library that uses an ordered queue",
+  "main": "index.js",
+  "scripts": {
+    "test": "node tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/losandes/mock-request-queue.git"
+  },
+  "keywords": [
+    "mock",
+    "request",
+    "http",
+    "https",
+    "test"
+  ],
+  "author": "Andy Wright <andes.collab@gmail.com> (https://github.com/losandes)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/losandes/mock-request-queue/issues"
+  },
+  "homepage": "https://github.com/losandes/mock-request-queue#readme",
+  "devDependencies": {
+    "eslint": "^4.5.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.1",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "supposed": "^0.1.0"
+  }
+}
