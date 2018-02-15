@@ -3,6 +3,8 @@ mock-request-queue
 
 A super-simple mock for the [request](https://github.com/request/request) library. There's nothing fancy about this mock: no route, nor verb matching. It's just an ordered queue that is peeled as your code executes [request](https://github.com/request/request). mock-request-queue doesn't break the Open/Closed Principle by overwriting / monkey patching anything. It's intended to be used with Dependency Injection.
 
+> NOTE mock-request-queue doesn't implement the entire request interface. Most notably, there isn't a streaming API (`pipe`)
+
 ## Installation
 
 ```Shell
