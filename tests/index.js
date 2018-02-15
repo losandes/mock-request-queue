@@ -1,2 +1,3 @@
-require('./request-spec.js')
-require('./request-verbs-spec.js')
+require('./request-specs.js')
+require('./request-verbs-specs.js')
+require('./documentation-specs.js')
