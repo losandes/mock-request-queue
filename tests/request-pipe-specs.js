@@ -24,11 +24,13 @@ module.exports = (test, dependencies) => {
 
       this.on('response', (res) => { this.response = res })
       this.on('error', reject)
-      this.on('end', () => resolve({
-        expectedBody: expectedBody,
-        res: this.getResponse(),
-        body: this.getBody()
-      }))
+      this.on('end', () => {
+        resolve({
+          expectedBody: expectedBody,
+          res: this.getResponse(),
+          body: this.getBody()
+        })
+      })
     }
 
     _write (chunk, encoding, next) {

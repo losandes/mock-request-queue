@@ -1,7 +1,7 @@
 module.exports = {
   name: 'MockRequest',
-  dependencies: ['StatusCodes'],
-  factory: (StatusCodes) => {
+  dependencies: ['StatusCodes', 'Duplex'],
+  factory: (StatusCodes, Duplex) => {
     'use strict'
 
     function MockRequest () {
@@ -17,79 +17,98 @@ module.exports = {
         return { ..._res, ...{ request }, ...res }
       }
 
-      const nextRequest = (requestParams, callback) => {
+      const getNextRequest = (requestParams) => {
         if (!queue.length) {
-          return callback(new Error('A mock request was not registered'))
+          return {
+            err: new Error('A mock request was not registered')
+          }
         }
 
         const { err, res, body } = queue.shift()
-        callback(err, makeResponse(requestParams, res), body)
-
-        return request
+        return {
+          err,
+          res: makeResponse(requestParams, res),
+          body
+        }
       }
 
-      /**
-       * Emits request data to a writable stream
-       * @param s {stream.Writable} - a writable stream to emit/write request data to
-       */
-      const pipe = (self, requestParams) => (s) => {
-        if (!queue.length) {
-          s.emit('error', new Error('A mock request was not registered'))
-          return request
+      class MockReadable extends Duplex {
+        constructor ({ err, res, body }) {
+          super({ objectMode: true })
+          this.body = body
+
+          this.err = err
+          this.res = res
+          this.body = body
         }
 
-        ['emit', 'write', 'end'].forEach((func) => {
-          if (typeof s[func] !== 'function') {
-            throw new Error('Invalid write stream: pipe expects a writable stream with support for: `emit`, `write`, and `end`')
+        _write () {}
+
+        _read () {
+          const { err, res, body } = this
+
+          if (this.err) {
+            this.emit('error', err)
+          } else {
+            this.emit('response', res)
+            this.push(JSON.stringify(body))
+            this.push(null)
           }
-        })
+        }
 
-        const { err, res, body } = queue.shift()
+        pipe (s) {
+          const { err, res, body } = this;
 
-        if (body && body.readable && typeof body.read === 'function') {
-          body.on('error', (err) => s.emit('error', err))
-          body.on('data', (data) => s.write(data))
-          body.on('end', () => {
-            s.emit('response', makeResponse(requestParams, res))
+          ['emit', 'write', 'end'].forEach((func) => {
+            if (typeof s[func] !== 'function') {
+              throw new Error('Invalid write stream: pipe expects a writable stream with support for: `emit`, `write`, and `end`')
+            }
+          })
+
+          if (body && body.readable && typeof body.read === 'function') {
+            body.on('error', (err) => s.emit('error', err))
+            body.on('data', (data) => s.write(data))
+            body.on('end', () => {
+              s.emit('response', res)
+
+              if (err) {
+                s.emit('error', err)
+              }
+
+              s.emit('end')
+              s.end()
+            })
+
+            return this
+          } else {
+            s.emit('response', res)
 
             if (err) {
               s.emit('error', err)
             }
 
+            if (typeof body === 'string') {
+              s.write(body)
+            } else if (typeof body === 'object') {
+              s.write(JSON.stringify(body))
+            }
+
             s.emit('end')
             s.end()
-          })
 
-          return self
-        } else {
-          s.emit('response', makeResponse(requestParams, res))
-
-          if (err) {
-            s.emit('error', err)
+            return this
           }
-
-          if (typeof body === 'string') {
-            s.write(body)
-          } else if (typeof body === 'object') {
-            s.write(JSON.stringify(body))
-          }
-
-          s.emit('end')
-          s.end()
-
-          return self
         }
       }
 
       function request (requestParams, callback) {
-        if (typeof callback === 'function') {
-          nextRequest(requestParams, callback)
+        const { err, res, body } = getNextRequest(requestParams)
+
+        if (callback) {
+          callback(err, res, body)
         }
 
-        const self = {}
-        self.pipe = pipe(self, requestParams)
-
-        return self
+        return new MockReadable({ err, res, body })
       }
 
       const makeParams = (method) => (requestParams) => {
